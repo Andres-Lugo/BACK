@@ -181,7 +181,7 @@ app.get('/api/candidates', async (req, res) => {
 });
 
 // Route to get detailed information about a candidate
-router.get('/:id', async (req, res) => {
+app.get('/api/candidates/:id', async (req, res) => {
   try {
     const candidate = await Candidate.findById(req.params.id);
     
