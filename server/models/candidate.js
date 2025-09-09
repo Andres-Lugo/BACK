@@ -9,4 +9,4 @@ const candidateSchema = new mongoose.Schema({
   cv: { type: String } // puedes guardar la ruta del archivo si manejas uploads
 });
 
-module.exports = mongoose.models.Candidate || mongoose.model("Candidate", candidateSchema);
+module.exports = mongoose.models.Candidate || mongoose.model("candidate", candidateSchema);
