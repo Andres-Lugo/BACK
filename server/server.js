@@ -11,6 +11,7 @@ require('dotenv').config();
 const bodyParser = require('body-parser'); // Added body-parser
 const app = express();
 
+
 // Middleware
 const corsOptions = {
   origin: 'https://techhubfrontend.onrender.com', // Updated to frontend's URL
@@ -29,6 +30,10 @@ app.options('*', cors(corsOptions)); // Enable pre-flight across-the-board
 app.use(bodyParser.json()); // Use bodyParser.json()
 
 app.use('/auth', authRoutes); // Authentication routes
+
+
+const candidateRoutes = require("./routes/candidates");
+app.use("/candidates", candidateRoutes);
 
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'your_default_mongo_uri';
