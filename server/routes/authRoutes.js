@@ -35,29 +35,55 @@ router.post('/register', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Verificar si el usuario ya existe
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'El correo ya está registrado' });
         }
 
-        // Encriptar la contraseña
         const hashedPassword = await bcrypt.hash(password, 12);
-
-        // Crear nuevo usuario
-        const newUser = new User({
-            email,
-            password: hashedPassword,
-        });
-
+        const newUser = new User({ email, password: hashedPassword });
         await newUser.save();
 
-        // Crear y enviar token JWT
-        const token = jwt.sign({ email: newUser.email, id: newUser._id }, 'your_jwt_secret', { expiresIn: '1h' });
+        const token = jwt.sign(
+            { email: newUser.email, id: newUser._id },
+            process.env.JWT_SECRET || 'your_jwt_secret',
+            { expiresIn: '1h' }
+        );
 
-        res.status(201).json({ token });
+        res.status(201).json({
+            message: 'Usuario registrado con éxito',
+            token,
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Something went wrong' });
+        res.status(500).json({ message: error.message || 'Error en el servidor' });
+    }
+});
+// Ruta de registro
+router.post('/register', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'El correo ya está registrado' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const newUser = new User({ email, password: hashedPassword });
+        await newUser.save();
+
+        const token = jwt.sign(
+            { email: newUser.email, id: newUser._id },
+            process.env.JWT_SECRET || 'your_jwt_secret',
+            { expiresIn: '1h' }
+        );
+
+        res.status(201).json({
+            message: 'Usuario registrado con éxito',
+            token,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Error en el servidor' });
     }
 });
 
