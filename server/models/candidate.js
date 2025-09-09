@@ -10,4 +10,4 @@ const CandidateSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Candidate", CandidateSchema);
+module.exports = mongoose.model("candidate", CandidateSchema);
