@@ -34,7 +34,6 @@ app.use('/auth', authRoutes); // Authentication routes
 
 const candidateRoutes = require("./routes/candidates");
 app.use("/candidates", candidateRoutes);
-
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'your_default_mongo_uri';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -205,63 +204,86 @@ const uploadEdit = multer({ storage });
 app.put('/api/candidates/:id', uploadEdit.single('cv'), async (req, res) => {
   const { id } = req.params;
   const { name, type, location, comments, employeeCode } = req.body;
-  let fileId = null;
-  let fileName = null;
-
-  console.log(`Received PUT request to update candidate with ID: ${id}`);
 
   try {
+    const candidate = await Candidate.findById(id);
+    if (!candidate) {
+      return res.status(404).json({ message: 'Candidate not found' });
+    }
+
+    let fileId = candidate.fileId;
+    let fileName = candidate.fileName;
+
+    // Si llega un nuevo archivo
     if (req.file) {
-      console.log('New CV file received:', req.file.originalname);
-      // Upload the new CV to GridFS
+      console.log('Nuevo CV recibido:', req.file.originalname);
+
+      // Eliminar el archivo anterior si existía
+      if (candidate.fileId) {
+        try {
+          await gridFSBucket.delete(new mongoose.Types.ObjectId(candidate.fileId));
+          console.log('CV anterior eliminado de GridFS:', candidate.fileId);
+        } catch (fileError) {
+          console.warn('Error eliminando CV anterior:', fileError.message);
+        }
+      }
+
+      // Subir nuevo CV
       const uploadStream = gridFSBucket.openUploadStream(req.file.originalname);
       fileId = await new Promise((resolve, reject) => {
-        uploadStream.on('error', (error) => {
-          console.error('Error uploading file to GridFS:', error);
-          reject(new Error('Error uploading file: ' + error.message));
-        });
-
-        uploadStream.on('finish', () => {
-          console.log('File uploaded successfully:', uploadStream.id);
-          resolve(uploadStream.id);
-        });
-
+        uploadStream.on('error', reject);
+        uploadStream.on('finish', () => resolve(uploadStream.id));
         uploadStream.end(req.file.buffer);
       });
       fileName = req.file.originalname;
     }
 
-    // Create the update object
+    // Crear objeto de actualización
     const updateData = {
       name,
       type,
       location,
       comments,
-      employeeCode
+      employeeCode,
+      fileId,
+      fileName,
     };
 
-    if (fileId) {
-      updateData.fileId = fileId;
-      updateData.fileName = fileName;
-    }
-
-    console.log('Update data:', updateData);
-
-    // Update the candidate in the database
     const updatedCandidate = await Candidate.findByIdAndUpdate(id, updateData, { new: true });
-
-    if (!updatedCandidate) {
-      console.log('Candidate not found');
-      return res.status(404).json({ message: 'Candidate not found' });
-    }
-
-    console.log('Candidate updated successfully:', updatedCandidate);
-    res.status(200).json(updatedCandidate);
+    res.json(updatedCandidate);
   } catch (error) {
     console.error('Error updating candidate:', error);
     res.status(500).json({ message: 'Error updating candidate', error: error.message });
   }
 });
+
+
+// Delete candidate
+app.delete('/api/candidates/:id', async (req, res) => {
+  try {
+    const candidate = await Candidate.findById(req.params.id);
+    if (!candidate) {
+      return res.status(404).json({ message: 'Candidate not found' });
+    }
+
+    // Si el candidato tiene un archivo, eliminarlo de GridFS
+    if (candidate.fileId) {
+      try {
+        await gridFSBucket.delete(new mongoose.Types.ObjectId(candidate.fileId));
+        console.log('CV eliminado de GridFS:', candidate.fileId);
+      } catch (fileError) {
+        console.warn('Error al eliminar CV de GridFS (continuando de todas formas):', fileError.message);
+      }
+    }
+
+    await Candidate.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Candidate deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting candidate:', error);
+    res.status(500).json({ message: 'Error deleting candidate', error: error.message });
+  }
+});
+
 
 // Start the server (Ensure only one app.listen exists)
 const PORT = process.env.PORT || 5000;

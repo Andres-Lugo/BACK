@@ -1,45 +1,51 @@
 const express = require("express");
-const Candidate = require("../models/candidate");
 const router = express.Router();
+const Candidate = require("../models/candidate");
 
-// Get all candidates
+// Obtener todos los candidatos
 router.get("/", async (req, res) => {
   try {
     const candidates = await Candidate.find();
     res.json(candidates);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Create candidate
+//  Crear candidato
 router.post("/", async (req, res) => {
   try {
-    const candidate = new Candidate(req.body);
-    await candidate.save();
-    res.status(201).json(candidate);
+    const newCandidate = new Candidate(req.body);
+    await newCandidate.save();
+    res.json(newCandidate);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// Update candidate
+// Actualizar candidato
 router.put("/:id", async (req, res) => {
   try {
-    const candidate = await Candidate.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(candidate);
+    const updatedCandidate = await Candidate.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updatedCandidate) return res.status(404).json({ error: "Candidate not found" });
+    res.json(updatedCandidate);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// Delete candidate
+// Eliminar candidato
 router.delete("/:id", async (req, res) => {
   try {
-    await Candidate.findByIdAndDelete(req.params.id);
+    const deletedCandidate = await Candidate.findByIdAndDelete(req.params.id);
+    if (!deletedCandidate) return res.status(404).json({ error: "Candidate not found" });
     res.json({ message: "Candidate deleted" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -1,13 +1,12 @@
-// models/Candidate.js
 const mongoose = require("mongoose");
 
-const CandidateSchema = new mongoose.Schema({
+const candidateSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  phone: String,
-  position: String,
-  cvUrl: String, // opcional: link a CV subido
-  createdAt: { type: Date, default: Date.now },
+  type: { type: String, required: true },
+  location: { type: String, required: true },
+  comments: { type: String },
+  employeeCode: { type: String },
+  cv: { type: String } // puedes guardar la ruta del archivo si manejas uploads
 });
 
-module.exports = mongoose.model("candidate", CandidateSchema);
+module.exports = mongoose.models.Candidate || mongoose.model("Candidate", candidateSchema);
